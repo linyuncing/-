@@ -11,7 +11,7 @@ let videoScale = 0.8;
 
 let trails = [];
 
-let cutSound;  // 音效變數
+let cutSound;
 
 function preload() {
   fruitImages["orange"] = [loadImage("assets/orange.jpg"), loadImage("assets/orange_cut.jpg")];
@@ -81,10 +81,7 @@ function draw() {
     for (let fruit of fruits) {
       if (!fruit.cutState && fruit.isHit(fingerX, fingerY)) {
         fruit.cut();
-        if (cutSound.isPlaying()) {
-          cutSound.stop();
-        }
-        cutSound.play();
+        cutSound.play();  // 直接播放音效，不停止前一個
       }
     }
   }
