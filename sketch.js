@@ -11,14 +11,15 @@ let videoScale = 0.8;
 
 let trails = [];
 
-let cutSound;
+let targetWord = "教育科技學系";
+let revealedLetters = [];
+let showCompleteMessage = false;
 
 function preload() {
   fruitImages["orange"] = [loadImage("assets/orange.jpg"), loadImage("assets/orange_cut.jpg")];
   fruitImages["strawberry"] = [loadImage("assets/strawberry.jpg"), loadImage("assets/strawberry_cut.jpg")];
   fruitImages["apple"] = [loadImage("assets/apple.jpg"), loadImage("assets/apple_cut.jpg")];
   fruitImages["watermelon"] = [loadImage("assets/watermelon.jpg"), loadImage("assets/watermelon_cut.png")];
-  cutSound = loadSound("assets/sharpen_knife.wav");
 }
 
 async function setup() {
@@ -33,6 +34,10 @@ async function setup() {
 
   noCursor();
   frameRate(30);
+
+  for (let i = 0; i < targetWord.length; i++) {
+    revealedLetters.push(false);
+  }
 }
 
 async function detectHands() {
@@ -67,9 +72,8 @@ function draw() {
 
   if (predictions.length > 0) {
     let hand = predictions[0];
-    let tip = hand.landmarks[8]; // 只偵測第 8 點（食指指尖）
-
-    let fingerX = width - tip[0]; // 左右鏡像
+    let tip = hand.landmarks[8];
+    let fingerX = width - tip[0];
     let fingerY = tip[1];
 
     addTrailPoint(fingerX, fingerY);
@@ -81,20 +85,19 @@ function draw() {
     for (let fruit of fruits) {
       if (!fruit.cutState && fruit.isHit(fingerX, fingerY)) {
         fruit.cut();
-        cutSound.play();  // 直接播放音效，不停止前一個
+        revealNextLetter();
       }
     }
   }
 
   fruits = fruits.filter(f => f.y < height + 150);
+
+  displayHangman();
 }
 
+// ---------- 痕跡 ----------
 function addTrailPoint(x, y) {
-  trails.push({
-    x,
-    y,
-    lifetime: 90
-  });
+  trails.push({ x, y, lifetime: 90 });
 }
 
 function updateTrails() {
@@ -109,6 +112,7 @@ function updateTrails() {
   }
 }
 
+// ---------- 生水果 ----------
 function spawnRandomFruit() {
   let names = Object.keys(fruitImages);
   let name = random(names);
@@ -171,5 +175,41 @@ class Fruit {
     this.cutState = true;
     this.cutOffsetX = 0;
     this.cutOffsetY = 0;
+  }
+}
+
+// ---------- Hangman 顯示 ----------
+function displayHangman() {
+  let displayWord = "";
+  for (let i = 0; i < targetWord.length; i++) {
+    displayWord += revealedLetters[i] ? targetWord[i] : "＿";
+  }
+
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(56);
+  text(displayWord, width / 2, height - 50);
+
+  if (showCompleteMessage) {
+    let wiggle = sin(frameCount * 0.3) * 20;
+    let r = random(150, 255);
+    let g = random(150, 255);
+    let b = random(150, 255);
+    fill(r, g, b);
+    textSize(80);
+    text("🎉 完成拼字！", width / 2, height / 2 + wiggle);
+  }
+}
+
+function revealNextLetter() {
+  for (let i = 0; i < revealedLetters.length; i++) {
+    if (!revealedLetters[i]) {
+      revealedLetters[i] = true;
+      break;
+    }
+  }
+
+  if (revealedLetters.every(l => l)) {
+    showCompleteMessage = true;
   }
 }
